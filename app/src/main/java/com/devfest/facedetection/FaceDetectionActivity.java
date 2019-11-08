@@ -17,28 +17,29 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
-import android.graphics.Point;
 import android.graphics.Rect;
-import android.graphics.drawable.BitmapDrawable;
 import android.media.ExifInterface;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
-import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.gms.tasks.Task;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.ml.vision.FirebaseVision;
-import com.google.firebase.ml.vision.barcode.FirebaseVisionBarcode;
-import com.google.firebase.ml.vision.barcode.FirebaseVisionBarcodeDetector;
-import com.google.firebase.ml.vision.barcode.FirebaseVisionBarcodeDetectorOptions;
 import com.google.firebase.ml.vision.common.FirebaseVisionImage;
+import com.google.firebase.ml.vision.common.FirebaseVisionPoint;
+import com.google.firebase.ml.vision.face.FirebaseVisionFace;
+import com.google.firebase.ml.vision.face.FirebaseVisionFaceDetector;
+import com.google.firebase.ml.vision.face.FirebaseVisionFaceDetectorOptions;
+import com.google.firebase.ml.vision.face.FirebaseVisionFaceLandmark;
+
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -47,24 +48,26 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-public class MainActivity extends AppCompatActivity {
+public class FaceDetectionActivity extends AppCompatActivity {
 
+    private static final int PICK_IMAGE = 1000;
     File foto;
     private String mDirAbsoluto = null;
 
-    FirebaseVisionBarcodeDetectorOptions options;
+    FirebaseVisionFaceDetectorOptions options;
     Bitmap bitmap;
 
     private static final Integer SCALE_FACTOR_IMAGE_VIEW = 4;
     private static final int PERMISSION_REQUESTS = 1;
     private static final int REQUEST_CODE_CAMARA = 2;
     private static final String EXTENSION_JPEG = ".jpg";
-    private static final String TAG = "MainActivity";
+    private static final String TAG = "BarCodeActivity";
     private static final String ALBUM = "Album";
 
 
     private ImageView imageView;
-    private Button btn_photo;
+    private ImageButton btn_photo;
+    private ImageButton btn_library;
     private TextView tvBarcode;
 
     @Override
@@ -74,6 +77,7 @@ public class MainActivity extends AppCompatActivity {
         FirebaseApp.initializeApp(this);
         imageView = findViewById(R.id.imageView);
         btn_photo = findViewById(R.id.btn_tomar_foto);
+        btn_library = findViewById(R.id.btn_library);
         tvBarcode = findViewById(R.id.tv_barcode);
         if (!allPermissionsGranted()){
             getRuntimePermissions();
@@ -84,9 +88,17 @@ public class MainActivity extends AppCompatActivity {
                     getFoto("nombre_foto");
                 }
             });
+            btn_library.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    openGallery();
+                }
+            });
         }
 
     }
+
+
 
 
     @Override
@@ -94,9 +106,24 @@ public class MainActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
         switch (requestCode) {
             case REQUEST_CODE_CAMARA:
-                mostrarFoto();
-                detectarCodigoBarras();
-                break;
+                if (resultCode == RESULT_OK) {
+                    mostrarFoto();
+                    detectarCaras();
+                    break;
+                }
+            case PICK_IMAGE:
+                if (resultCode == RESULT_OK) {
+                    Uri imageUri = data.getData();
+
+                    try {
+                        bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), imageUri);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    imageView.setImageBitmap(bitmap);
+                    detectarCaras();
+
+                }
         }
     }
 
@@ -105,43 +132,32 @@ public class MainActivity extends AppCompatActivity {
         imageView.setImageBitmap(bitmap);
     }
 
-    private void detectarCodigoBarras() {
+    private void detectarCaras() {
         options =
-                new FirebaseVisionBarcodeDetectorOptions.Builder()
-                        .setBarcodeFormats(
-                                FirebaseVisionBarcode.FORMAT_QR_CODE)
+                new FirebaseVisionFaceDetectorOptions.Builder()
+                        .setPerformanceMode(FirebaseVisionFaceDetectorOptions.FAST)
+                        .setLandmarkMode(FirebaseVisionFaceDetectorOptions.ALL_LANDMARKS)
+                        .setContourMode(FirebaseVisionFaceDetectorOptions.NO_CONTOURS)
                         .build();
         FirebaseVisionImage image = FirebaseVisionImage.fromBitmap(bitmap);
-        FirebaseVisionBarcodeDetector detector = FirebaseVision.getInstance()
-                .getVisionBarcodeDetector();
+        FirebaseVisionFaceDetector detector = FirebaseVision.getInstance()
+                .getVisionFaceDetector();
 
-        Task<List<FirebaseVisionBarcode>> result = detector.detectInImage(image)
-                .addOnSuccessListener(new OnSuccessListener<List<FirebaseVisionBarcode>>() {
+        detector.detectInImage(image)
+                .addOnSuccessListener(new OnSuccessListener<List<FirebaseVisionFace>>() {
                     @Override
-                    public void onSuccess(List<FirebaseVisionBarcode> barcodes) {
-                        Toast.makeText(MainActivity.this, "onSuccess detector barcodes ", Toast.LENGTH_SHORT).show();
-                        for (FirebaseVisionBarcode barcode: barcodes) {
-                            Rect bounds = barcode.getBoundingBox();
-                            Point[] corners = barcode.getCornerPoints();
+                    public void onSuccess(List<FirebaseVisionFace> faces) {
+                        Toast.makeText(FaceDetectionActivity.this, "onSuccess detector barcodes ", Toast.LENGTH_SHORT).show();
+                        for (FirebaseVisionFace face: faces) {
+                            Rect bounds = face.getBoundingBox();
+                            float rotY = face.getHeadEulerAngleY();  // Cabeza es rotada Y grados
+                            float rotZ = face.getHeadEulerAngleZ();  // Cabeza es rotada Z grados
                             dibujarRect(bounds);
 
-                            String rawValue = barcode.getRawValue();
-                            tvBarcode.setText(rawValue);
-                            int valueType = barcode.getValueType();
-                            // See API reference for complete list of supported types
-                            switch (valueType) {
-                                case FirebaseVisionBarcode.TYPE_WIFI:
-                                    String ssid = barcode.getWifi().getSsid();
-                                    String password = barcode.getWifi().getPassword();
-                                    int type = barcode.getWifi().getEncryptionType();
-                                    break;
-                                case FirebaseVisionBarcode.TYPE_URL:
-                                    String title = barcode.getUrl().getTitle();
-                                    String url = barcode.getUrl().getUrl();
-                                    break;
-                                case FirebaseVisionBarcode.TYPE_TEXT:
-                                    String text = barcode.getRawValue();
-                                    break;
+                            // si el landmark fue habilitado
+                            FirebaseVisionFaceLandmark leftEar = face.getLandmark(FirebaseVisionFaceLandmark.LEFT_EAR);
+                            if (leftEar != null) {
+                                FirebaseVisionPoint leftEarPos = leftEar.getPosition();
                             }
                         }
                     }
@@ -149,7 +165,7 @@ public class MainActivity extends AppCompatActivity {
                 .addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull Exception e) {
-                        Toast.makeText(MainActivity.this, "onFailure detector barcodes ", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(FaceDetectionActivity.this, "onFailure detector barcodes ", Toast.LENGTH_SHORT).show();
                     }
                 });
     }
@@ -181,13 +197,13 @@ public class MainActivity extends AppCompatActivity {
                     Locale.getDefault()).format(new Date());
             String nombre = ALBUM + "_" + fechaHora;
             // Crea el Archivo de la Fotografía
-            foto = nombrarArchivo(MainActivity.this, ALBUM, nombreFoto,
+            foto = nombrarArchivo(FaceDetectionActivity.this, ALBUM, nombreFoto,
                     EXTENSION_JPEG);
 
 
             // Guarda el Directorio Absoluto en una Variable Global
             mDirAbsoluto = foto.getAbsolutePath();
-            intent.putExtra(MediaStore.EXTRA_OUTPUT, FileProvider.getUriForFile(MainActivity.this, BuildConfig.APPLICATION_ID, foto));
+            intent.putExtra(MediaStore.EXTRA_OUTPUT, FileProvider.getUriForFile(FaceDetectionActivity.this, BuildConfig.APPLICATION_ID, foto));
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -215,14 +231,14 @@ public class MainActivity extends AppCompatActivity {
                             .getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
                     album);
 
-                if (!file.mkdirs()) {
-                    if (!file.exists()) {
-                        Toast.makeText(context,
-                                "Error al crear el directorio.",
-                                Toast.LENGTH_SHORT).show();
-                        return null;
-                    }
+            if (!file.mkdirs()) {
+                if (!file.exists()) {
+                    Toast.makeText(context,
+                            "Error al crear el directorio.",
+                            Toast.LENGTH_SHORT).show();
+                    return null;
                 }
+            }
 
         } else {
             Toast.makeText(context, "Tarjeta SD no disponible.",
@@ -264,6 +280,11 @@ public class MainActivity extends AppCompatActivity {
         bmOptions.inSampleSize = factor;
         bmOptions.inPurgeable = true;
         return rotarBitmap(uri, BitmapFactory.decodeFile(uri, bmOptions));
+    }
+
+    private void openGallery() {
+        Intent gallery = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI);
+        startActivityForResult(gallery, PICK_IMAGE);
     }
 
     //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
