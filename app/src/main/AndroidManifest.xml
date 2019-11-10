@@ -33,7 +33,7 @@
         </provider>
 
 
-        <activity android:name=".BarCodeActivity">
+        <activity android:name=".SelecctionActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -41,6 +41,7 @@
             </intent-filter>
         </activity>
         <activity android:name=".FaceDetectionActivity" />
+        <activity android:name=".BarCodeActivity" />
     </application>
 
 </manifest>

@@ -147,7 +147,7 @@ public class FaceDetectionActivity extends AppCompatActivity {
                 .addOnSuccessListener(new OnSuccessListener<List<FirebaseVisionFace>>() {
                     @Override
                     public void onSuccess(List<FirebaseVisionFace> faces) {
-                        Toast.makeText(FaceDetectionActivity.this, "onSuccess detector barcodes ", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(FaceDetectionActivity.this, "onSuccess detector face ", Toast.LENGTH_SHORT).show();
                         for (FirebaseVisionFace face: faces) {
                             Rect bounds = face.getBoundingBox();
                             float rotY = face.getHeadEulerAngleY();  // Cabeza es rotada Y grados
@@ -165,7 +165,7 @@ public class FaceDetectionActivity extends AppCompatActivity {
                 .addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull Exception e) {
-                        Toast.makeText(FaceDetectionActivity.this, "onFailure detector barcodes ", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(FaceDetectionActivity.this, "onFailure detector face ", Toast.LENGTH_SHORT).show();
                     }
                 });
     }

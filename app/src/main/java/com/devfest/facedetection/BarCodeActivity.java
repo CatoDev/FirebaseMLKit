@@ -97,8 +97,6 @@ public class BarCodeActivity extends AppCompatActivity {
     }
 
 
-
-
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -148,7 +146,7 @@ public class BarCodeActivity extends AppCompatActivity {
                         for (FirebaseVisionBarcode barcode: barcodes) {
                             Rect bounds = barcode.getBoundingBox();
                             Point[] corners = barcode.getCornerPoints();
-                            dibujarRect(bounds);
+                            dibujarRect(corners);
                             String rawValue = barcode.getRawValue();
                             tvBarcode.setText(rawValue);
                             int valueType = barcode.getValueType();
@@ -181,24 +179,23 @@ public class BarCodeActivity extends AppCompatActivity {
                 });
     }
 
-    private void dibujarRect(Rect corners) {
-        crearPunto(corners);
-    }
-
-    private void crearPunto(Rect corners) {
+    private void dibujarRect(Point[] corners) {
         Bitmap bmp = Bitmap.createBitmap(imageView.getWidth(), imageView.getHeight(), Bitmap.Config.ARGB_8888);
         Canvas c = new Canvas(bmp);
         imageView.draw(c);
         Paint p = new Paint();
         p.setColor(Color.BLUE);
-        c.drawRect(corners, p);
+        c.drawCircle(corners[0].x,corners[0].y,15f, p);
         imageView.setImageBitmap(bmp);
     }
+
+
 
 
     //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     //--------------------------------------------------------Funciones para foto-----------------------------------------------------------------------------------------------
     // -------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 
     private void getFoto(String nombreFoto) {
         Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
