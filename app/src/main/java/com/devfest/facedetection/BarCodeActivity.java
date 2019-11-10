@@ -129,54 +129,7 @@ public class BarCodeActivity extends AppCompatActivity {
     }
 
     private void detectarCodigoBarras() {
-        options =
-                new FirebaseVisionBarcodeDetectorOptions.Builder()
-                        .setBarcodeFormats(
-                                FirebaseVisionBarcode.FORMAT_QR_CODE)
-                        .build();
-        FirebaseVisionImage image = FirebaseVisionImage.fromBitmap(bitmap);
-        FirebaseVisionBarcodeDetector detector = FirebaseVision.getInstance()
-                .getVisionBarcodeDetector();
 
-        detector.detectInImage(image)
-                .addOnSuccessListener(new OnSuccessListener<List<FirebaseVisionBarcode>>() {
-                    @Override
-                    public void onSuccess(List<FirebaseVisionBarcode> barcodes) {
-                        Toast.makeText(BarCodeActivity.this, "onSuccess detector barcodes ", Toast.LENGTH_SHORT).show();
-                        for (FirebaseVisionBarcode barcode: barcodes) {
-                            Rect bounds = barcode.getBoundingBox();
-                            Point[] corners = barcode.getCornerPoints();
-                            dibujarRect(corners);
-                            String rawValue = barcode.getRawValue();
-                            tvBarcode.setText(rawValue);
-                            int valueType = barcode.getValueType();
-
-                            // Ver documentacion para ver todos los tipos
-
-                            switch (valueType) {
-                                case FirebaseVisionBarcode.TYPE_WIFI:
-                                    String ssid = barcode.getWifi().getSsid();
-                                    String password = barcode.getWifi().getPassword();
-                                    int type = barcode.getWifi().getEncryptionType();
-                                    break;
-                                case FirebaseVisionBarcode.TYPE_URL:
-                                    String title = barcode.getUrl().getTitle();
-                                    String url = barcode.getUrl().getUrl();
-
-                                    break;
-                                case FirebaseVisionBarcode.TYPE_TEXT:
-                                    String text = barcode.getRawValue();
-                                    break;
-                            }
-                        }
-                    }
-                })
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        Toast.makeText(BarCodeActivity.this, "onFailure detector barcodes ", Toast.LENGTH_SHORT).show();
-                    }
-                });
     }
 
     private void dibujarRect(Point[] corners) {

@@ -133,41 +133,6 @@ public class FaceDetectionActivity extends AppCompatActivity {
     }
 
     private void detectarCaras() {
-        options =
-                new FirebaseVisionFaceDetectorOptions.Builder()
-                        .setPerformanceMode(FirebaseVisionFaceDetectorOptions.FAST)
-                        .setLandmarkMode(FirebaseVisionFaceDetectorOptions.ALL_LANDMARKS)
-                        .setContourMode(FirebaseVisionFaceDetectorOptions.NO_CONTOURS)
-                        .build();
-        FirebaseVisionImage image = FirebaseVisionImage.fromBitmap(bitmap);
-        FirebaseVisionFaceDetector detector = FirebaseVision.getInstance()
-                .getVisionFaceDetector();
-
-        detector.detectInImage(image)
-                .addOnSuccessListener(new OnSuccessListener<List<FirebaseVisionFace>>() {
-                    @Override
-                    public void onSuccess(List<FirebaseVisionFace> faces) {
-                        Toast.makeText(FaceDetectionActivity.this, "onSuccess detector face ", Toast.LENGTH_SHORT).show();
-                        for (FirebaseVisionFace face: faces) {
-                            Rect bounds = face.getBoundingBox();
-                            float rotY = face.getHeadEulerAngleY();  // Cabeza es rotada Y grados
-                            float rotZ = face.getHeadEulerAngleZ();  // Cabeza es rotada Z grados
-                            dibujarRect(bounds);
-
-                            // si el landmark fue habilitado
-                            FirebaseVisionFaceLandmark leftEar = face.getLandmark(FirebaseVisionFaceLandmark.LEFT_EAR);
-                            if (leftEar != null) {
-                                FirebaseVisionPoint leftEarPos = leftEar.getPosition();
-                            }
-                        }
-                    }
-                })
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        Toast.makeText(FaceDetectionActivity.this, "onFailure detector face ", Toast.LENGTH_SHORT).show();
-                    }
-                });
     }
 
     private void dibujarRect(Rect corners) {
